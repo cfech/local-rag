@@ -13,7 +13,7 @@ def generate_response(input):
 
 # Store LLM generated responses
 if "messages" not in st.session_state.keys():
-    st.session_state.messages = [{"role": "assistant", "content": "Welcome, get ready to be mind blown by AI"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Welcome! I can answer questions using both your uploaded documents and my general knowledge. Ask me anything!"}]
 
 # Display chat messages
 for message in st.session_state.messages:
@@ -29,7 +29,7 @@ if input := st.chat_input():
 # Generate a new response if last message is not from assistant
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
-        with st.spinner("Getting your answer from superior intelligence.."):
+        with st.spinner("Querying LLM..."):
             response = generate_response(input) 
             
             st.write(response) 

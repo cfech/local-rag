@@ -55,17 +55,26 @@ pipenv shell
 
 ## 🚀 2. Usage
 
+### 1. Install Ollama
+```bash
+brew install ollama
+```
+
 ### 1. Start Ollama and Pull the Models
 
 ```bash
 ollama serve
 ollama pull gemma3n
+ollama pull llama3.1:8b
 ollama pull toshk0/nomic-embed-text-v2-moe:Q6_K
+ollama pull mxbai-embed-large
 ```
 
 ### 2. Load Documents
 
-Place your `.pdf` files in the `data/` directory.
+Place your documents in the `data/` directory. Supported formats:
+- **PDF files** (`.pdf`) - Research papers, books, documentation
+- **Markdown files** (`.md`) - Notes, documentation, structured content
 
 ```bash
 python ./src/load_docs.py
@@ -89,19 +98,26 @@ Ask questions and the chatbot will respond using relevant context retrieved from
 
 ---
 
-## 🧩 3. Customization
+## 🧩 3. Features & Customization
+
+### 📝 **Enhanced Document Support**
+- **Smart Markdown Processing**: Preserves document structure with header-aware chunking
+- **Mixed Document Types**: Process PDFs and Markdown files together in one knowledge base
+- **Intelligent Chunk IDs**: Section-based naming for Markdown (e.g., `section_core_ai_concepts`) and page-based for PDFs
+
+### ⚙️ **Customization Options**
 
 - **✏️ Modify Prompts**  
-  Update prompt templates in `UI.py` to guide the chatbot’s tone or behavior.
+  Update prompt templates in `UI.py` to guide the chatbot's tone or behavior.
 
 - **🔄 Try Different Models**  
-  Ollama supports various LLMs and embedding models. Run `ollama list` to see what’s available or try pulling new ones.
+  Ollama supports various LLMs and embedding models. Run `ollama list` to see what's available or try pulling new ones.
 
 - **⚙️ Tune Retrieval Parameters**  
   Adjust chunk size, overlaps, or top-K retrieval values in `load_docs.py` for improved performance.
 
 - **🚀 Extend the Interface**  
-  Add features like file upload, chat history, user authentication, or export options using Streamlit’s powerful features.
+  Add features like file upload, chat history, user authentication, or export options using Streamlit's powerful features.
 
 ---
 
