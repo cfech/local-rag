@@ -13,10 +13,11 @@ This base of this code was taken from [eplit](https://github.com/eplt/RAG_Ollama
 - [Streamlit](https://streamlit.io/) for a clean and interactive chat UI.
 - [ChromaDB](https://www.trychroma.com/) for storing and querying vector embeddings.
 
-As of **2025-07-17**, I'm using:
+Current configuration:
 
-- 🔍 Embedding model: `nomic-embed-text-v2-moe`
-- 🧠 LLM: `gemma3n`
+- 🔍 Embedding model: `mxbai-embed-large` (reliable and stable)
+- 🧠 LLM: `llama3.1:8b` (excellent balance of quality and performance)
+- 🔄 **Hybrid RAG**: Uses both your documents AND general AI knowledge
 
 ---
 
@@ -25,24 +26,55 @@ As of **2025-07-17**, I'm using:
 - **🔒 Privacy**: No data is sent to the cloud. Upload and query your documents entirely offline.
 - **💸 Cost-effective**: No API tokens or cloud GPU costs. You only pay electricity.
 - **📚 Better than summarizing**: With long PDFs or multiple documents, even summaries may not contain the context you need. A RAG chatbot can drill deeper and provide contextual answers.
+- **🧠 Hybrid Intelligence**: Combines your private documents with general AI knowledge for comprehensive answers.
 
-> ✅ Recommended: At least **16GB of RAM** on your Mac. Preferably 24GB+ for smoother experience.
+## 💾 System Requirements
+
+- **Minimum**: 8GB RAM (use `phi3.5:3.8b` model)
+- **Recommended**: 16GB RAM (use `llama3.1:8b` model) ✅
+- **Optimal**: 32GB+ RAM (use `mixtral:8x7b` or larger models)
+- **Storage**: ~6GB for models + your document data
 
 ---
 
-## 🛠️ 1. Installation
+## ⚡ Quick Start
+
+```bash
+# 1. Install Ollama and models
+brew install ollama
+ollama serve  # Keep running in terminal 1
+
+# 2. In terminal 2: Setup project
+git clone <your-repo-url>
+cd local-rag
+pipenv install
+
+# 3. Pull models
+ollama pull llama3.1:8b
+ollama pull mxbai-embed-large
+
+# 4. Load your documents
+pipenv run python ./src/load_docs.py
+
+# 5. Start chatting!
+pipenv run streamlit run ./src/UI.py
+```
+
+---
+
+## 🛠️ 1. Detailed Installation
 
 ### 1. Clone the Repository
 
 ```bash
-git clone TODO - Add Link
-cd local_rag
+git clone <your-repo-url>
+cd local-rag
 ```
 
 ### 2. Create a Venv and Install Dependencies
 
 ```bash
-pipenv insatll
+pipenv install
 ```
 **on mac venv are usually created under the `~/.local/virtualenv/` directory 
 
@@ -60,41 +92,42 @@ pipenv shell
 brew install ollama
 ```
 
-### 1. Start Ollama and Pull the Models
+### 2. Start Ollama and Pull the Models
 
 ```bash
 ollama serve
-ollama pull gemma3n
 ollama pull llama3.1:8b
-ollama pull toshk0/nomic-embed-text-v2-moe:Q6_K
 ollama pull mxbai-embed-large
 ```
 
-### 2. Load Documents
+### 3. Load Documents
 
 Place your documents in the `data/` directory. Supported formats:
 - **PDF files** (`.pdf`) - Research papers, books, documentation
 - **Markdown files** (`.md`) - Notes, documentation, structured content
 
 ```bash
-python ./src/load_docs.py
+pipenv run python ./src/load_docs.py
 ```
 
 To reset and reload the vector database:
 
 ```bash
-python ./src/load_docs.py --reset
+pipenv run python ./src/load_docs.py --reset
 ```
 
-### 3. Launch the Chatbot Interface
+### 4. Launch the Chatbot Interface
 
 ```bash
-streamlit run ./src/UI.py
+pipenv run streamlit run ./src/UI.py
 ```
 
-### 4. Start Chatting
+### 5. Start Chatting
 
-Ask questions and the chatbot will respond using relevant context retrieved from your documents.
+Ask questions and the chatbot will respond intelligently using:
+- **Your documents** when relevant information is found
+- **General AI knowledge** to supplement or when no relevant docs exist
+- **Both sources** for comprehensive answers
 
 ---
 
@@ -104,17 +137,18 @@ Ask questions and the chatbot will respond using relevant context retrieved from
 - **Smart Markdown Processing**: Preserves document structure with header-aware chunking
 - **Mixed Document Types**: Process PDFs and Markdown files together in one knowledge base
 - **Intelligent Chunk IDs**: Section-based naming for Markdown (e.g., `section_core_ai_concepts`) and page-based for PDFs
+- **Hybrid RAG**: Combines document knowledge with general AI knowledge for comprehensive answers
 
 ### ⚙️ **Customization Options**
 
 - **✏️ Modify Prompts**  
-  Update prompt templates in `UI.py` to guide the chatbot's tone or behavior.
+  Update prompt templates in `src/rag_query.py` to guide the chatbot's tone or behavior.
 
 - **🔄 Try Different Models**  
   Ollama supports various LLMs and embedding models. Run `ollama list` to see what's available or try pulling new ones.
 
 - **⚙️ Tune Retrieval Parameters**  
-  Adjust chunk size, overlaps, or top-K retrieval values in `load_docs.py` for improved performance.
+  Adjust `SIMILARITY_THRESHOLD` and `MAX_CONTEXT_DOCS` in `src/rag_query.py`, or chunk size/overlaps in `src/load_docs.py`.
 
 - **🚀 Extend the Interface**  
   Add features like file upload, chat history, user authentication, or export options using Streamlit's powerful features.
@@ -129,10 +163,19 @@ Ask questions and the chatbot will respond using relevant context retrieved from
 - **Missing models?**  
   Run `ollama list` to verify models are downloaded correctly.
 
+- **"decode: cannot decode batches" error?**  
+  Switch to `mxbai-embed-large` embedding model (more compatible than `nomic-embed-text-v2-moe`).
+
+- **Out of memory errors?**  
+  Try smaller models: `phi3.5:3.8b` for chat or `llama3.2:3b` for very low memory.
+
+- **No relevant documents found?**  
+  The system will use general AI knowledge. Adjust `SIMILARITY_THRESHOLD` in `src/rag_query.py`.
+
 - **Dependency issues?**  
-  Double-check your Python version (3.7+) and re-create the virtual environment.
+  Ensure Python 3.12+ and run `pipenv install` to recreate the virtual environment.  
 
 - **Streamlit errors?**  
-  Ensure you're running the app from the correct path and activate your virtual environment.
+  Ensure you're running commands with `pipenv run` prefix from the project directory.
 
 ---
