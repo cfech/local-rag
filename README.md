@@ -10,7 +10,7 @@ This base of this code was taken from [eplit](https://github.com/eplt/RAG_Ollama
 > Lightweight, private, and customizable retrieval-augmented chatbot locally on your computer.
 
 - [Ollama](https://ollama.com/) for running open-source LLMs and embedding models locally.
-- [Streamlit](https://streamlit.io/) for a clean and interactive chat UI.
+- [Gradio](https://gradio.app/) for a modern, interactive chat UI with real-time parameter tuning.
 - [ChromaDB](https://www.trychroma.com/) for storing and querying vector embeddings.
 
 Current configuration:
@@ -37,28 +37,49 @@ Current configuration:
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Quick Start (Complete Setup)
+
+### Prerequisites
+- **Python 3.8+** (check with `python3 --version`)
+- **macOS** with Homebrew installed
+- **8GB+ RAM** recommended
+
+### Step-by-Step Setup
 
 ```bash
-# 1. Install Ollama and models
-brew install ollama
-ollama serve  # Keep running in terminal 1
+# 1. Install pipenv if you don't have it
+pip3 install pipenv
 
-# 2. In terminal 2: Setup project
-git clone <your-repo-url>
+# 2. Clone and setup project
+git clone https://github.com/cfech/local-rag.git  
 cd local-rag
-pipenv install
+pipenv install  # Creates virtual environment and installs dependencies
 
-# 3. Pull models
-ollama pull llama3.1:8b
-ollama pull mxbai-embed-large
+# 3. Install and start Ollama
+brew install ollama
+ollama serve  # Keep this running in terminal 1
 
-# 4. Load your documents
+# 4. In a NEW terminal (terminal 2), pull required models
+ollama pull llama3.1:8b      # ~4.9GB download
+ollama pull mxbai-embed-large # ~669MB download
+
+# 5. Verify models are installed
+ollama list  # Should show both models
+
+# 6. Create data directory and add your documents
+mkdir -p data
+# Copy your PDF and Markdown files to the data/ folder
+
+# 7. Build the vector database from your documents
 pipenv run python ./src/load_docs.py
 
-# 5. Start chatting with tunable parameters! 🆕
+# 8. Launch the chatbot interface
 pipenv run python ./src/gradio_ui.py
+
+# 9. Open your browser and go to: http://localhost:7860
 ```
+
+🎉 **You're ready to chat!** The interface will show all your documents are loaded and you can start asking questions.
 
 ---
 
@@ -67,7 +88,7 @@ pipenv run python ./src/gradio_ui.py
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/cfech/local-rag.git
 cd local-rag
 ```
 
@@ -118,22 +139,39 @@ pipenv run python ./src/load_docs.py --reset
 
 ### 4. Launch the Chatbot Interface
 
-**Option A: Enhanced Gradio Interface (Recommended)** 🆕
+**Primary Interface: Enhanced Gradio UI** ⭐
 ```bash
 pipenv run python ./src/gradio_ui.py
 ```
+- **Access**: Open http://localhost:7860 in your browser
+- **Features**: Real-time parameter tuning, model selection, debug info
+- **Usage**: Type questions and press Enter to chat
 
-**Option B: Simple Streamlit Interface**
+**Alternative: Simple Streamlit Interface** (Basic)
 ```bash
 pipenv run streamlit run ./src/UI.py
 ```
+- **Access**: Opens automatically in browser
+- **Features**: Basic chat interface without parameter tuning
 
 ### 5. Start Chatting
 
-Ask questions and the chatbot will respond intelligently using:
-- **Your documents** when relevant information is found
-- **General AI knowledge** to supplement or when no relevant docs exist
-- **Both sources** for comprehensive answers
+**How to Use the Interface:**
+1. **Type your question** in the message box
+2. **Press Enter** to send (or click Send button)
+3. **Adjust parameters** in real-time using the expanded control panel
+4. **Monitor debug info** to see which documents are being used
+
+**The chatbot responds intelligently using:**
+- **Your documents** when relevant information is found (shows sources)
+- **General AI knowledge** to supplement incomplete document info
+- **Both sources** for comprehensive, contextual answers
+
+**Parameter Quick Guide:**
+- **Temperature**: Higher = more creative, Lower = more focused
+- **Top-P**: Controls response diversity (0.9 recommended)
+- **Max Tokens**: Response length (500 = ~400 words)
+- **Similarity**: Lower = stricter document matching
 
 ---
 
@@ -146,10 +184,13 @@ Ask questions and the chatbot will respond intelligently using:
 - **Hybrid RAG**: Combines document knowledge with general AI knowledge for comprehensive answers
 
 ### 🎛️ **Interactive Parameter Tuning** (Gradio Interface)
-- **Real-time Sliders**: Adjust similarity threshold, document count, and retrieval settings
-- **Model Selection**: Switch between different chat and embedding models on-the-fly
+- **Response Generation**: Control creativity (temperature), focus (top-p), and length (max tokens)
+- **Real-time Sliders**: Adjust similarity threshold, document count, and retrieval settings  
+- **Smart Model Selection**: Automatically detects installed models with ✅ indicators
+- **🔄 Model Refresh**: Click refresh button to detect newly installed models without restart
 - **Debug Panel**: See exactly which documents are used and similarity scores
-- **Live Configuration**: No need to restart - parameters change immediately
+- **Expanded View**: All parameter sections open by default for easy access
+- **Enter Key**: Type and press Enter to send messages (no clicking required)
 - **Processing Insights**: View context length, processing time, and source attribution
 
 ### ⚙️ **Customization Options**
@@ -170,25 +211,50 @@ Ask questions and the chatbot will respond intelligently using:
 
 ## 🧯 4. Troubleshooting
 
+### Common Setup Issues
+
+- **"pipenv: command not found"**  
+  Install pipenv: `pip3 install pipenv` or `brew install pipenv`
+
+- **"ollama: command not found"**  
+  Install Ollama: `brew install ollama` then start: `ollama serve`
+
 - **Ollama not running?**  
-  Make sure `ollama serve` is active in a terminal tab.
+  Make sure `ollama serve` is active in a terminal tab. Check with `curl http://localhost:11434`
 
-- **Missing models?**  
-  Run `ollama list` to verify models are downloaded correctly.
+- **Models not downloading?**  
+  Ensure Ollama is running first, then: `ollama pull llama3.1:8b && ollama pull mxbai-embed-large`
 
-- **"decode: cannot decode batches" error?**  
-  Switch to `mxbai-embed-large` embedding model (more compatible than `nomic-embed-text-v2-moe`).
+- **"No documents found" in data/ directory**  
+  Add PDF or Markdown files to the `data/` folder, then run `pipenv run python ./src/load_docs.py --reset`
 
-- **Out of memory errors?**  
-  Try smaller models: `phi3.5:3.8b` for chat or `llama3.2:3b` for very low memory.
+### Runtime Issues
 
-- **No relevant documents found?**  
-  The system will use general AI knowledge. Adjust `SIMILARITY_THRESHOLD` in `src/rag_query.py`.
+- **Port 7860 already in use**  
+  Kill existing processes: `lsof -ti:7860 | xargs kill` or change port in `src/gradio_ui.py`
 
-- **Dependency issues?**  
-  Ensure Python 3.12+ and run `pipenv install` to recreate the virtual environment.  
+- **"decode: cannot decode batches" error**  
+  Switch to `mxbai-embed-large` embedding model (more compatible than others)
 
-- **Streamlit errors?**  
-  Ensure you're running commands with `pipenv run` prefix from the project directory.
+- **Out of memory errors**  
+  Try smaller models: `phi3.5:3.8b` for chat or `llama3.2:3b` for very low memory
+
+- **No relevant documents found**  
+  The system will use general AI knowledge. Lower similarity threshold in the UI or add more documents
+
+- **Interface not loading**  
+  Check terminal for errors, ensure all dependencies installed: `pipenv install --dev`
+
+### Model Management
+
+- **Check installed models**: `ollama list`
+- **Remove unused models**: `ollama rm model-name`  
+- **Refresh models in UI**: Click the 🔄 button next to model dropdowns
+
+### Performance Tips
+
+- **First response slow?** Models load into memory on first use (30-60s)
+- **Memory usage high?** Restart Ollama service: `killall ollama && ollama serve`
+- **Database issues?** Reset and rebuild: `pipenv run python ./src/load_docs.py --reset`
 
 ---
