@@ -3,13 +3,11 @@ from langchain_chroma import Chroma  # Updated import for Chroma
 from langchain_ollama import OllamaLLM  # Updated import for Ollama
 from langchain.prompts import ChatPromptTemplate
 from embedding import get_embedding_function
+from config import RAGConfig, DEFAULT_CONFIG
 import re
+from typing import Optional, Tuple, List, Dict, Any
 
 CHROMA_PATH = "chroma"
-
-# Configuration
-SIMILARITY_THRESHOLD = 1.5  # Lower scores = better matches. Adjust based on your needs
-MAX_CONTEXT_DOCS = 3        # Maximum number of documents to include in context
 
 PROMPT= """
 You are a knowledgeable AI assistant. Use the following context from documents to answer the question, but you can also supplement with your general knowledge when helpful.
@@ -35,47 +33,100 @@ def main():
     parser.add_argument("query_text", type=str, help="The query text.")
     args = parser.parse_args()
     query_text = args.query_text
-    query_rag(query_text)
+    response, debug_info = query_rag(query_text)
+    print(f"\nResponse: {response}")
+    print(f"Debug Info: {debug_info}")
 
 
 
 def remove_think_tags(response):
     return re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL)
 
-def query_rag(query: str):
-    # Prepare the DB.
+def query_rag(query: str, config: Optional[RAGConfig] = None) -> Tuple[str, Dict[str, Any]]:
+    """
+    Enhanced RAG query function with tunable parameters.
+    
+    Args:
+        query: The user's question
+        config: RAGConfig object with tunable parameters (uses defaults if None)
+    
+    Returns:
+        Tuple of (response_text, debug_info)
+    """
+    if config is None:
+        config = DEFAULT_CONFIG
+    
+    debug_info = {
+        "sources": [],
+        "similarity_scores": [],
+        "context_length": 0,
+        "processing_time": 0,
+        "used_rag": False,
+        "num_docs_retrieved": 0,
+        "num_docs_used": 0
+    }
+    
+    import time
+    start_time = time.time()
+    
+    # Prepare the DB
     embedding_function = get_embedding_function()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
-    # Search the DB.
-    results = db.similarity_search_with_score(query, k=5)
+    # Search the DB with configurable top-k
+    results = db.similarity_search_with_score(query, k=config.top_k_retrieval)
+    debug_info["num_docs_retrieved"] = len(results)
 
-    # Check if we have good quality matches (similarity score threshold)
-    relevant_docs = [(doc, score) for doc, score in results if score < SIMILARITY_THRESHOLD]
+    # Check if we have good quality matches using configurable threshold
+    relevant_docs = [(doc, score) for doc, score in results if score < config.similarity_threshold]
     
-    if relevant_docs:
-        # Use relevant documents
-        context = "\n\n---\n\n".join([doc.page_content for doc, _score in relevant_docs[:MAX_CONTEXT_DOCS]])
-        sources = [doc.metadata.get("id", None) for doc, _score in relevant_docs[:MAX_CONTEXT_DOCS]]
-        print(f"Using {len(relevant_docs[:MAX_CONTEXT_DOCS])} relevant documents from your knowledge base")
+    if relevant_docs and config.use_rag:
+        # Use relevant documents with configurable max docs
+        context_docs = relevant_docs[:config.max_context_docs]
+        context = "\n\n---\n\n".join([doc.page_content for doc, _score in context_docs])
+        sources = [doc.metadata.get("id", "Unknown") for doc, _score in context_docs]
+        similarity_scores = [float(score) for _doc, score in context_docs]
+        
+        debug_info["used_rag"] = True
+        debug_info["sources"] = sources
+        debug_info["similarity_scores"] = similarity_scores
+        debug_info["num_docs_used"] = len(context_docs)
+        debug_info["context_length"] = len(context)
+        
+        print(f"Using {len(context_docs)} relevant documents from your knowledge base")
     else:
-        # No relevant documents found - use general knowledge
-        context = "No relevant information found in the document knowledge base."
+        # No relevant documents found or RAG disabled - use general knowledge
+        context = "No relevant information found in the document knowledge base." if config.use_rag else "RAG disabled - using general AI knowledge only."
         sources = ["General AI Knowledge"]
-        print("No relevant documents found - using general knowledge")
+        debug_info["sources"] = sources
+        debug_info["context_length"] = len(context)
+        print("No relevant documents found - using general knowledge" if config.use_rag else "RAG disabled - using general knowledge")
 
     prompt_template = ChatPromptTemplate.from_template(PROMPT)
     prompt = prompt_template.format(context=context, question=query)
-    # print(prompt)
 
-    #model = OllamaLLM(model="mistral")
-    # model = OllamaLLM(model="gemma3n:latest")
-    model = OllamaLLM(model="llama3.1:8b")
+    # Use configurable model with generation parameters
+    model = OllamaLLM(
+        model=config.chat_model,
+        temperature=config.temperature,
+        top_p=config.top_p,
+        num_predict=config.max_tokens  # Ollama's parameter for max tokens
+    )
     response_text = model.invoke(prompt)
     response = remove_think_tags(response_text)
 
-    formatted_response = f"Response: {response_text}\nSources: {sources}"
-    print(formatted_response)
+    debug_info["processing_time"] = time.time() - start_time
+
+    if config.enable_debug:
+        formatted_response = f"Response: {response_text}\nSources: {sources}\nDebug: {debug_info}"
+        print(formatted_response)
+    
+    return response, debug_info
+
+# Backward compatibility wrapper
+def query_rag_simple(query: str) -> str:
+    """Simple wrapper for backward compatibility with existing code."""
+    response, _ = query_rag(query)
     return response
 
 

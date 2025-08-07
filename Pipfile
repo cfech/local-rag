@@ -12,6 +12,7 @@ langchain-ollama = "*"
 langchain-text-splitters = "*"
 chromadb = "*"
 pypdf = "*"
+gradio = "*"
 
 [dev-packages]
 

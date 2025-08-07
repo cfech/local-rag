@@ -56,8 +56,8 @@ ollama pull mxbai-embed-large
 # 4. Load your documents
 pipenv run python ./src/load_docs.py
 
-# 5. Start chatting!
-pipenv run streamlit run ./src/UI.py
+# 5. Start chatting with tunable parameters! 🆕
+pipenv run python ./src/gradio_ui.py
 ```
 
 ---
@@ -118,6 +118,12 @@ pipenv run python ./src/load_docs.py --reset
 
 ### 4. Launch the Chatbot Interface
 
+**Option A: Enhanced Gradio Interface (Recommended)** 🆕
+```bash
+pipenv run python ./src/gradio_ui.py
+```
+
+**Option B: Simple Streamlit Interface**
 ```bash
 pipenv run streamlit run ./src/UI.py
 ```
@@ -138,6 +144,13 @@ Ask questions and the chatbot will respond intelligently using:
 - **Mixed Document Types**: Process PDFs and Markdown files together in one knowledge base
 - **Intelligent Chunk IDs**: Section-based naming for Markdown (e.g., `section_core_ai_concepts`) and page-based for PDFs
 - **Hybrid RAG**: Combines document knowledge with general AI knowledge for comprehensive answers
+
+### 🎛️ **Interactive Parameter Tuning** (Gradio Interface)
+- **Real-time Sliders**: Adjust similarity threshold, document count, and retrieval settings
+- **Model Selection**: Switch between different chat and embedding models on-the-fly
+- **Debug Panel**: See exactly which documents are used and similarity scores
+- **Live Configuration**: No need to restart - parameters change immediately
+- **Processing Insights**: View context length, processing time, and source attribution
 
 ### ⚙️ **Customization Options**
 
