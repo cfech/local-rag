@@ -107,16 +107,55 @@ class RAGInterface:
     def create_interface(self):
         """Create and configure the Gradio interface."""
         
+        # Custom CSS for better visual hierarchy and compact layout
+        custom_css = """
+        .prominent-input textarea {
+            border: 2px solid #4F46E5 !important;
+            border-radius: 8px !important;
+            font-size: 16px !important;
+            padding: 12px !important;
+        }
+        
+        .send-button {
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+        }
+        
+        .gradio-container {
+            max-width: 1400px !important;
+        }
+        
+        /* Compact accordion styling */
+        .accordion-header {
+            padding: 8px 12px !important;
+            font-size: 14px !important;
+        }
+        
+        /* Tighter spacing for parameter controls */
+        .form {
+            gap: 8px !important;
+        }
+        
+        /* Make debug info more subtle */
+        .debug-info {
+            font-size: 12px !important;
+            opacity: 0.8;
+        }
+        """
+        
         with gr.Blocks(
             title="🧠 Local RAG Chatbot with Tunable Parameters",
-            theme=gr.themes.Soft()
+            theme=gr.themes.Soft(),
+            css=custom_css
         ) as interface:
             
-            gr.Markdown("# 🧠 Local RAG Chatbot")
-            gr.Markdown("Ask questions and tune parameters in real-time! The system uses both your documents and general AI knowledge.")
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("# 🧠 Local RAG Chatbot", elem_classes=["main-title"])
+                    gr.Markdown("📚 Ask questions about your documents • 🎛️ Tune AI parameters in real-time • 🧠 Hybrid knowledge system", elem_classes=["subtitle"])
             
             with gr.Row():
-                with gr.Column(scale=3):  # Increased from 2 to 3 for bigger chat window
+                with gr.Column(scale=4):  # Increased to 4 for even bigger chat window
                     # Main chat interface
                     chatbot = gr.Chatbot(
                         height=600,  # Increased from 500 to 600
@@ -125,71 +164,98 @@ class RAGInterface:
                         type="messages"  # Fix deprecation warning
                     )
                     
-                    msg = gr.Textbox(
-                        placeholder="Type your question here and press Enter...",
-                        label="Message",
-                        lines=1,  # Changed to single line for better Enter key behavior
-                        autofocus=True,
-                        show_label=False,
-                        container=False,
-                        max_lines=1  # Ensure single line behavior
-                    )
+                    with gr.Row():
+                        msg = gr.Textbox(
+                            placeholder="💬 Ask a question about your documents and press Enter...",
+                            label="Message",
+                            lines=1,
+                            autofocus=True,
+                            show_label=False,
+                            container=False,
+                            max_lines=1,
+                            scale=4,  # Take most of the row width
+                            elem_classes=["prominent-input"]  # Custom CSS class for styling
+                        )
+                        
+                        send_btn = gr.Button(
+                            "Send", 
+                            variant="primary", 
+                            scale=1,
+                            size="lg",
+                            elem_classes=["send-button"]
+                        )
                     
                     with gr.Row():
-                        clear_btn = gr.Button("Clear Chat", variant="secondary")
-                        send_btn = gr.Button("Send", variant="primary")
+                        clear_btn = gr.Button(
+                            "🗑️ Clear Chat", 
+                            variant="secondary",
+                            size="sm"
+                        )
                 
-                with gr.Column(scale=1):
+                with gr.Column(scale=1, min_width=300):  # Narrower parameter panel with min width
                     # Parameter controls panel - consolidated into one box
                     with gr.Group():
-                        gr.Markdown("## ⚙️ RAG Parameters")
+                        gr.Markdown("### ⚙️ Parameters", elem_classes=["parameters-title"])
                         
                         with gr.Accordion("🎛️ Response Generation", open=True):
+                            # Compact slider layout with smaller controls
                             temperature = gr.Slider(
                                 minimum=DEFAULT_CONFIG.TEMPERATURE_RANGE[0],
                                 maximum=DEFAULT_CONFIG.TEMPERATURE_RANGE[1],
                                 step=0.1,
                                 value=DEFAULT_CONFIG.temperature,
                                 label="Temperature",
-                                info="Higher = more creative, Lower = more focused"
+                                info="Creativity: Higher = creative, Lower = focused",
+                                container=False
                             )
                             
-                            top_p = gr.Slider(
-                                minimum=DEFAULT_CONFIG.TOP_P_RANGE[0],
-                                maximum=DEFAULT_CONFIG.TOP_P_RANGE[1],
-                                step=0.1,
-                                value=DEFAULT_CONFIG.top_p,
-                                label="Top-P",
-                                info="Nucleus sampling - lower = more focused"
-                            )
-                            
-                            max_tokens = gr.Slider(
-                                minimum=DEFAULT_CONFIG.MAX_TOKENS_RANGE[0],
-                                maximum=DEFAULT_CONFIG.MAX_TOKENS_RANGE[1],
-                                step=50,
-                                value=DEFAULT_CONFIG.max_tokens,
-                                label="Max Tokens",
-                                info="Maximum response length"
-                            )
+                            with gr.Row():
+                                top_p = gr.Slider(
+                                    minimum=DEFAULT_CONFIG.TOP_P_RANGE[0],
+                                    maximum=DEFAULT_CONFIG.TOP_P_RANGE[1],
+                                    step=0.1,
+                                    value=DEFAULT_CONFIG.top_p,
+                                    label="Top-P",
+                                    info="Focus control",
+                                    scale=1,
+                                    container=False
+                                )
+                                
+                                max_tokens = gr.Slider(
+                                    minimum=DEFAULT_CONFIG.MAX_TOKENS_RANGE[0],
+                                    maximum=DEFAULT_CONFIG.MAX_TOKENS_RANGE[1],
+                                    step=50,
+                                    value=DEFAULT_CONFIG.max_tokens,
+                                    label="Length",
+                                    info="Response length",
+                                    scale=1,
+                                    container=False
+                                )
                         
-                        with gr.Accordion("🔍 Core RAG Settings", open=True):
-                            similarity_threshold = gr.Slider(
-                                minimum=0.5,
-                                maximum=3.0,
-                                step=0.1,
-                                value=DEFAULT_CONFIG.similarity_threshold,
-                                label="Similarity Threshold",
-                                info="Lower = more strict matching"
-                            )
-                            
-                            max_context_docs = gr.Slider(
-                                minimum=1,
-                                maximum=10,
-                                step=1,
-                                value=DEFAULT_CONFIG.max_context_docs,
-                                label="Max Context Documents",
-                                info="Number of documents to include in context"
-                            )
+                        with gr.Accordion("🔍 Core RAG Settings", open=False):
+                            # Compact RAG controls
+                            with gr.Row():
+                                similarity_threshold = gr.Slider(
+                                    minimum=0.5,
+                                    maximum=3.0,
+                                    step=0.1,
+                                    value=DEFAULT_CONFIG.similarity_threshold,
+                                    label="Similarity",
+                                    info="Document matching strictness",
+                                    scale=1,
+                                    container=False
+                                )
+                                
+                                max_context_docs = gr.Slider(
+                                    minimum=1,
+                                    maximum=10,
+                                    step=1,
+                                    value=DEFAULT_CONFIG.max_context_docs,
+                                    label="Max Docs",
+                                    info="Documents in context",
+                                    scale=1,
+                                    container=False
+                                )
                             
                             top_k_retrieval = gr.Slider(
                                 minimum=1,
@@ -197,10 +263,11 @@ class RAGInterface:
                                 step=1,
                                 value=DEFAULT_CONFIG.top_k_retrieval,
                                 label="Top-K Retrieval",
-                                info="Number of documents to retrieve from database"
+                                info="Documents to retrieve from database",
+                                container=False
                             )
                         
-                        with gr.Accordion("🤖 Model Settings", open=True):
+                        with gr.Accordion("🤖 Model Settings", open=False):
                             # Find the correct default values from the choices
                             default_chat = next((choice for choice in AVAILABLE_CHAT_MODELS if DEFAULT_CONFIG.chat_model in choice), AVAILABLE_CHAT_MODELS[0] if AVAILABLE_CHAT_MODELS else DEFAULT_CONFIG.chat_model)
                             default_embed = next((choice for choice in AVAILABLE_EMBEDDING_MODELS if DEFAULT_CONFIG.embedding_model in choice), AVAILABLE_EMBEDDING_MODELS[0] if AVAILABLE_EMBEDDING_MODELS else DEFAULT_CONFIG.embedding_model)
@@ -230,7 +297,7 @@ class RAGInterface:
                                 info="Use document knowledge (vs pure LLM)"
                             )
                         
-                        with gr.Accordion("📄 Text Processing", open=True):
+                        with gr.Accordion("📄 Text Processing", open=False):
                             chunk_size = gr.Dropdown(
                                 choices=DEFAULT_CONFIG.CHUNK_SIZE_OPTIONS,
                                 value=DEFAULT_CONFIG.chunk_size,
@@ -247,7 +314,7 @@ class RAGInterface:
                                 info="Overlap between chunks (requires reload)"
                             )
                         
-                        with gr.Accordion("🔧 Debug Settings", open=True):
+                        with gr.Accordion("🔧 Debug Settings", open=False):
                             enable_debug = gr.Checkbox(
                                 value=DEFAULT_CONFIG.enable_debug,
                                 label="Enable Debug Info",
@@ -257,7 +324,8 @@ class RAGInterface:
                     # Debug information display (outside the main parameter group)
                     debug_info = gr.Markdown(
                         label="Debug Information",
-                        visible=True
+                        visible=True,
+                        elem_classes=["debug-info"]
                     )
             
             # Event handlers
